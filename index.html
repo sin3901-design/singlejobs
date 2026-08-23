@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>사주궁합 분석소 — 정밀 궁합 리포트</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1B1F3B;
+    --ink-2:#262c52;
+    --paper:#F3EDE4;
+    --paper-2:#E8DFCE;
+    --gold:#C9A227;
+    --seal:#A33B20;
+    --slate:#8b8577;
+    --slate-dark:#4b4a45;
+    --radius:18px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 20% 10%, rgba(201,162,39,0.10), transparent 40%),
+      radial-gradient(circle at 80% 90%, rgba(163,59,32,0.10), transparent 45%),
+      var(--ink);
+    font-family:"Pretendard","Apple SD Gothic Neo",-apple-system,BlinkMacSystemFont,"Malgun Gothic",sans-serif;
+    color:var(--paper);
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding:28px 14px 60px;
+  }
+  .stage{width:100%;max-width:480px;}
+  .brand{
+    display:flex;align-items:center;gap:12px;margin-bottom:22px;padding:0 4px;
+  }
+  .brand-seal{
+    width:40px;height:40px;border-radius:50%;border:2px solid var(--seal);
+    display:flex;align-items:center;justify-content:center;
+    font-family:"Noto Serif KR",serif;color:var(--seal);font-weight:900;font-size:18px;
+    flex-shrink:0;
+  }
+  .brand-text .eyebrow{font-size:11px;letter-spacing:0.14em;color:var(--gold);font-weight:600;}
+  .brand-text h1{font-family:"Noto Serif KR",serif;font-size:19px;margin:2px 0 0;font-weight:700;letter-spacing:0.01em;}
+
+  .card{
+    background:var(--paper);
+    color:var(--ink);
+    border-radius:var(--radius);
+    padding:28px 24px 26px;
+    box-shadow:0 24px 60px rgba(0,0,0,0.35);
+    position:relative;
+    overflow:hidden;
+  }
+  .card::before{
+    content:"";position:absolute;inset:8px;border:1px solid rgba(27,31,59,0.14);border-radius:12px;pointer-events:none;
+  }
+
+  /* ---------- FORM ---------- */
+  .intro{font-family:"Noto Serif KR",serif;font-size:22px;font-weight:700;line-height:1.4;margin:0 0 6px;}
+  .intro-sub{font-size:13px;color:var(--slate-dark);line-height:1.6;margin:0 0 24px;}
+
+  .person{margin-bottom:18px;padding:16px 16px 14px;background:var(--paper-2);border-radius:12px;border:1px solid rgba(27,31,59,0.08);}
+  .person-label{display:flex;align-items:center;gap:8px;font-family:"Noto Serif KR",serif;font-weight:700;font-size:14px;margin-bottom:12px;color:var(--ink);}
+  .person-label .dot{width:8px;height:8px;border-radius:50%;background:var(--seal);}
+  .field{margin-bottom:10px;}
+  .field:last-child{margin-bottom:0;}
+  .field label{display:block;font-size:11px;color:var(--slate);margin-bottom:5px;letter-spacing:0.03em;}
+  .field input{
+    width:100%;padding:10px 12px;border-radius:8px;border:1px solid rgba(27,31,59,0.18);
+    background:#fff;font-size:14px;font-family:inherit;color:var(--ink);
+  }
+  .field input:focus{outline:2px solid var(--gold);outline-offset:1px;}
+
+  .cta{
+    width:100%;padding:15px;margin-top:6px;border:none;border-radius:10px;
+    background:var(--ink);color:var(--paper);font-family:"Noto Serif KR",serif;
+    font-size:15px;font-weight:700;letter-spacing:0.02em;cursor:pointer;
+    transition:transform .15s ease, background .2s ease;
+  }
+  .cta:active{transform:scale(0.98);}
+  .cta:disabled{opacity:0.45;cursor:not-allowed;}
+  .error-msg{font-size:12px;color:var(--seal);margin-top:8px;min-height:14px;}
+
+  /* ---------- LOADING ---------- */
+  .loading{display:none;flex-direction:column;align-items:center;padding:50px 10px 30px;text-align:center;}
+  .loading.active{display:flex;}
+  .abacus{width:64px;height:64px;position:relative;margin-bottom:22px;}
+  .abacus::before,.abacus::after{
+    content:"";position:absolute;left:50%;top:50%;width:64px;height:64px;margin:-32px 0 0 -32px;
+    border-radius:50%;border:2px solid var(--gold);
+    animation:spin 1.6s linear infinite;
+  }
+  .abacus::after{border-color:transparent;border-top-color:var(--seal);animation-duration:1s;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .loading-text{font-family:"Noto Serif KR",serif;font-size:14px;font-weight:600;color:var(--slate-dark);}
+  .loading-sub{font-size:12px;color:var(--slate);margin-top:6px;font-family:"IBM Plex Mono",monospace;}
+
+  /* ---------- RESULT ---------- */
+  .result{display:none;}
+  .result.active{display:block;animation:fadein .5s ease both;}
+  @keyframes fadein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+  .report-head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px dashed rgba(27,31,59,0.25);padding-bottom:14px;margin-bottom:18px;}
+  .report-head .no{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--slate);}
+  .report-head h2{font-family:"Noto Serif KR",serif;font-size:17px;margin:4px 0 0;}
+  .report-head .date{font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--slate);text-align:right;}
+
+  .names-row{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:20px;font-family:"Noto Serif KR",serif;font-weight:700;font-size:15px;}
+  .names-row .x{color:var(--gold);font-size:13px;}
+
+  .gauge-wrap{display:flex;flex-direction:column;align-items:center;margin-bottom:22px;}
+  .gauge{
+    width:168px;height:168px;border-radius:50%;
+    background:conic-gradient(var(--seal) calc(var(--pct) * 1%), var(--paper-2) 0);
+    display:flex;align-items:center;justify-content:center;
+    position:relative;
+  }
+  .gauge::before{content:"";position:absolute;inset:12px;border-radius:50%;background:var(--paper);border:1px solid rgba(27,31,59,0.1);}
+  .gauge-inner{position:relative;text-align:center;}
+  .gauge-inner .score{font-family:"Noto Serif KR",serif;font-size:38px;font-weight:900;color:var(--ink);}
+  .gauge-inner .label{font-size:10px;color:var(--slate);letter-spacing:0.08em;margin-top:2px;}
+  .gauge-tag{margin-top:12px;font-family:"Noto Serif KR",serif;font-weight:700;font-size:14px;color:var(--seal);}
+
+  .pillars{display:flex;gap:10px;margin-bottom:20px;}
+  .pillar{flex:1;background:var(--paper-2);border-radius:10px;padding:12px 8px;text-align:center;}
+  .pillar .who{font-size:10px;color:var(--slate);margin-bottom:6px;}
+  .pillar .ganji{font-family:"Noto Serif KR",serif;font-size:20px;font-weight:700;}
+  .pillar .wx{font-size:10px;color:var(--seal);margin-top:4px;font-family:"IBM Plex Mono",monospace;}
+
+  .section-title{font-family:"Noto Serif KR",serif;font-weight:700;font-size:13px;margin:22px 0 10px;display:flex;align-items:center;gap:6px;}
+  .section-title::before{content:"";width:3px;height:13px;background:var(--seal);display:inline-block;border-radius:2px;}
+
+  .metric{margin-bottom:12px;}
+  .metric-top{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;}
+  .metric-top .m-name{color:var(--slate-dark);}
+  .metric-top .m-val{font-family:"IBM Plex Mono",monospace;font-weight:600;}
+  .metric-bar{height:7px;border-radius:5px;background:var(--paper-2);overflow:hidden;}
+  .metric-bar > div{height:100%;background:linear-gradient(90deg,var(--gold),var(--seal));border-radius:5px;width:0;transition:width 1s ease;}
+
+  .analysis-text{font-size:13.5px;line-height:1.85;color:var(--slate-dark);background:var(--paper-2);padding:14px 15px;border-radius:10px;margin-top:4px;}
+
+  .seal-stamp{
+    display:flex;flex-direction:column;align-items:center;margin:26px 0 6px;
+  }
+  .seal-stamp .ring{
+    width:76px;height:76px;border-radius:50%;border:3px solid var(--seal);color:var(--seal);
+    display:flex;align-items:center;justify-content:center;flex-direction:column;
+    font-family:"Noto Serif KR",serif;transform:rotate(-8deg) scale(0.5);opacity:0;
+    animation:stamp .5s cubic-bezier(.2,1.4,.4,1) .3s forwards;
+  }
+  @keyframes stamp{to{transform:rotate(-8deg) scale(1);opacity:1;}}
+  .seal-stamp .ring b{font-size:14px;letter-spacing:0.05em;}
+  .seal-stamp .ring span{font-size:9px;margin-top:2px;}
+
+  .retry{
+    width:100%;padding:13px;margin-top:20px;border-radius:10px;border:1px solid rgba(27,31,59,0.2);
+    background:transparent;color:var(--ink);font-family:"Noto Serif KR",serif;font-weight:700;font-size:13.5px;cursor:pointer;
+  }
+
+  .disclaimer{font-size:10.5px;color:rgba(243,237,228,0.45);text-align:center;margin-top:18px;line-height:1.6;padding:0 10px;}
+
+  /* ---------- 음양력 토글 ---------- */
+  .cal-toggle{display:flex;gap:6px;margin-bottom:10px;}
+  .cal-toggle label{
+    flex:1;text-align:center;font-size:12px;padding:7px 0;border-radius:7px;
+    border:1px solid rgba(27,31,59,0.18);background:#fff;color:var(--slate-dark);cursor:pointer;
+    transition:background .15s, color .15s, border-color .15s;
+  }
+  .cal-toggle input{display:none;}
+  .cal-toggle input:checked + span{ }
+  .cal-toggle label.active{background:var(--ink);border-color:var(--ink);color:var(--paper);}
+  .lunar-note{font-size:10.5px;color:var(--slate);margin-top:6px;line-height:1.5;display:none;}
+  .lunar-note.show{display:block;}
+  .leap-check{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:11.5px;color:var(--slate-dark);}
+  .leap-check input{width:14px;height:14px;}
+
+  /* ---------- 광고 슬롯 ---------- */
+  .ad-slot{
+    border:1px dashed rgba(27,31,59,0.28);
+    border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--slate);font-size:11px;letter-spacing:0.05em;
+    background:rgba(27,31,59,0.03);
+    margin:18px 0;
+  }
+  .ad-slot.ad-form{min-height:60px;}
+  .ad-slot.ad-result{min-height:90px;}
+  .ad-slot span{display:flex;flex-direction:column;align-items:center;gap:2px;}
+  .ad-slot small{font-size:9px;opacity:0.7;}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="brand">
+    <div class="brand-seal">印</div>
+    <div class="brand-text">
+      <div class="eyebrow">SAJU COMPATIBILITY BUREAU</div>
+      <h1>사주궁합 분석소</h1>
+    </div>
+  </div>
+
+  <div class="card">
+
+    <!-- FORM -->
+    <div class="view view-form">
+      <p class="intro">두 사람의 일주(日柱)를<br>정밀 대조합니다.</p>
+      <p class="intro-sub">생년월일을 입력하면 오행 상생상극 관계를 기반으로 궁합 리포트를 생성합니다.</p>
+
+      <div class="person">
+        <div class="person-label"><span class="dot"></span>첫 번째 사람</div>
+        <div class="field">
+          <label for="nameA">이름 (선택)</label>
+          <input id="nameA" type="text" maxlength="10" placeholder="예: 지수">
+        </div>
+        <div class="field">
+          <label>달력 기준</label>
+          <div class="cal-toggle" id="calToggleA">
+            <label class="active" data-val="solar"><input type="radio" name="calA" value="solar" checked><span>양력</span></label>
+            <label data-val="lunar"><input type="radio" name="calA" value="lunar"><span>음력</span></label>
+          </div>
+        </div>
+        <div class="field">
+          <label for="dateA">생년월일</label>
+          <input id="dateA" type="date">
+        </div>
+        <div class="leap-check" id="leapWrapA" style="display:none;">
+          <input type="checkbox" id="leapA"><label for="leapA">윤달이에요</label>
+        </div>
+        <div class="lunar-note" id="lunarNoteA">※ 음력은 근사 변환값이며 실제 날짜와 1~2일 오차가 있을 수 있습니다.</div>
+      </div>
+
+      <div class="person">
+        <div class="person-label"><span class="dot" style="background:var(--gold)"></span>두 번째 사람</div>
+        <div class="field">
+          <label for="nameB">이름 (선택)</label>
+          <input id="nameB" type="text" maxlength="10" placeholder="예: 민준">
+        </div>
+        <div class="field">
+          <label>달력 기준</label>
+          <div class="cal-toggle" id="calToggleB">
+            <label class="active" data-val="solar"><input type="radio" name="calB" value="solar" checked><span>양력</span></label>
+            <label data-val="lunar"><input type="radio" name="calB" value="lunar"><span>음력</span></label>
+          </div>
+        </div>
+        <div class="field">
+          <label for="dateB">생년월일</label>
+          <input id="dateB" type="date">
+        </div>
+        <div class="leap-check" id="leapWrapB" style="display:none;">
+          <input type="checkbox" id="leapB"><label for="leapB">윤달이에요</label>
+        </div>
+        <div class="lunar-note" id="lunarNoteB">※ 음력은 근사 변환값이며 실제 날짜와 1~2일 오차가 있을 수 있습니다.</div>
+      </div>
+
+      <div class="ad-slot ad-form"><span>광고 영역 (예: 300×60)<small>여기에 광고 스크립트를 삽입하세요</small></span></div>
+
+      <button class="cta" id="submitBtn">정밀 분석 시작</button>
+      <div class="error-msg" id="errorMsg"></div>
+    </div>
+
+    <!-- LOADING -->
+    <div class="loading" id="loadingView">
+      <div class="abacus"></div>
+      <div class="loading-text">일주(日柱) 간지 대조 중</div>
+      <div class="loading-sub" id="loadingSub">CALCULATING WUXING RELATION...</div>
+    </div>
+
+    <!-- RESULT -->
+    <div class="result" id="resultView">
+      <div class="report-head">
+        <div>
+          <div class="no" id="reportNo">REPORT NO. —</div>
+          <h2>사주궁합 정밀 분석 리포트</h2>
+        </div>
+        <div class="date" id="reportDate"></div>
+      </div>
+
+      <div class="names-row">
+        <span id="nameADisp">A</span><span class="x">×</span><span id="nameBDisp">B</span>
+      </div>
+
+      <div class="gauge-wrap">
+        <div class="gauge" id="gauge" style="--pct:0">
+          <div class="gauge-inner">
+            <div class="score" id="scoreNum">0</div>
+            <div class="label">GUNGHAP SCORE</div>
+          </div>
+        </div>
+        <div class="gauge-tag" id="gaugeTag"></div>
+      </div>
+
+      <div class="pillars">
+        <div class="pillar">
+          <div class="who" id="pillarWhoA">A의 일주</div>
+          <div class="ganji" id="ganjiA">—</div>
+          <div class="wx" id="wxA">—</div>
+        </div>
+        <div class="pillar">
+          <div class="who" id="pillarWhoB">B의 일주</div>
+          <div class="ganji" id="ganjiB">—</div>
+          <div class="wx" id="wxB">—</div>
+        </div>
+      </div>
+
+      <div class="section-title">세부 지표</div>
+      <div id="metrics"></div>
+
+      <div class="section-title">종합 소견</div>
+      <div class="analysis-text" id="analysisText"></div>
+
+      <div class="seal-stamp">
+        <div class="ring"><b>分析</b><span>COMPLETE</span></div>
+      </div>
+
+      <div class="ad-slot ad-result"><span>광고 영역 (예: 300×250)<small>여기에 광고 스크립트를 삽입하세요</small></span></div>
+
+      <button class="retry" id="retryBtn">다른 조합으로 다시 분석하기</button>
+    </div>
+
+  </div>
+
+  <p class="disclaimer">※ 본 서비스는 간이 계산식(그레고리력 기준)으로 산출한 오락용 콘텐츠이며, 정통 명리학 감정 결과와 다를 수 있습니다.</p>
+</div>
+
+<script>
+(function(){
+  const stems = ['갑','을','병','정','무','기','경','신','임','계'];
+  const branches = ['자','축','인','묘','진','사','오','미','신','유','술','해'];
+  const stemWx = ['목','목','화','화','토','토','금','금','수','수'];
+  const wxColorHint = {'목':'생동하는 성장의 기운','화':'열정과 확산의 기운','토':'안정과 포용의 기운','금':'결단과 정제의 기운','수':'지혜와 유연함의 기운'};
+
+  const generates = {'목':'화','화':'토','토':'금','금':'수','수':'목'};
+  const controls  = {'목':'토','토':'수','수':'화','화':'금','금':'목'};
+
+  const sanhap = [['인','오','술'],['사','유','축'],['신','자','진'],['해','묘','미']];
+  const yukhap = {'자':'축','축':'자','인':'해','해':'인','묘':'술','술':'묘','진':'유','유':'진','사':'신','신':'사','오':'미','미':'오'};
+  const chung  = {'자':'오','오':'자','축':'미','미':'축','인':'신','신':'인','묘':'유','유':'묘','진':'술','술':'진','사':'해','해':'사'};
+
+  function getJDN(y,m,d){
+    const a = Math.floor((14-m)/12);
+    const y2 = y + 4800 - a;
+    const m2 = m + 12*a - 3;
+    return d + Math.floor((153*m2+2)/5) + 365*y2 + Math.floor(y2/4) - Math.floor(y2/100) + Math.floor(y2/400) - 32045;
+  }
+
+  function dayPillar(y,m,d){
+    const jdn = getJDN(y,m,d);
+    const idx = ((jdn + 49) % 60 + 60) % 60;
+    return { stem: stems[idx % 10], branch: branches[idx % 12], wx: stemWx[idx % 10] };
+  }
+
+  // JDN -> 그레고리력 (근사 음력 변환의 역산에 사용)
+  function jdnToGregorian(jdn){
+    const a = jdn + 32044;
+    const b = Math.floor((4*a + 3) / 146097);
+    const c = a - Math.floor((146097*b) / 4);
+    const d2 = Math.floor((4*c + 3) / 1461);
+    const e = c - Math.floor((1461*d2) / 4);
+    const m2 = Math.floor((5*e + 2) / 153);
+    const day = e - Math.floor((153*m2 + 2) / 5) + 1;
+    const month = m2 + 3 - 12*Math.floor(m2/10);
+    const year = 100*b + d2 - 4800 + Math.floor(m2/10);
+    return {y:year, m:month, d:day};
+  }
+
+  // 음력(근사) -> 양력 변환: 1900-01-31(양력) = 1900-01-01(음력) 기준,
+  // 평균 삭망월(29.53059일)과 평균 태음월수(12.368개월/년)를 이용한 근사 계산.
+  // 정확한 절기/윤달 데이터표 없이 계산하는 간이식으로, 실제 음력과 1~2일 오차가 있을 수 있음.
+  function lunarToSolarApprox(y,m,d,isLeap){
+    const refJDN = getJDN(1900,1,31);
+    let monthsElapsed = (y - 1900) * 12.368 + (m - 1);
+    if(isLeap) monthsElapsed += 0.5; // 윤달은 해당 월 뒤에 삽입되는 경향을 반영한 근사 보정
+    const daysElapsed = monthsElapsed * 29.53059 + (d - 1);
+    const targetJDN = Math.round(refJDN + daysElapsed);
+    return jdnToGregorian(targetJDN);
+  }
+
+  function resolveDate(y,m,d,calType,isLeap){
+    if(calType === 'lunar'){
+      return lunarToSolarApprox(y,m,d,isLeap);
+    }
+    return {y,m,d};
+  }
+
+  function yearBranch(y){
+    const idx = ((y - 4) % 12 + 12) % 12;
+    return branches[idx];
+  }
+
+  function hashStr(str){
+    let h = 0;
+    for(let i=0;i<str.length;i++){ h = (h*31 + str.charCodeAt(i)) >>> 0; }
+    return h;
+  }
+
+  function clamp(n,min,max){ return Math.max(min, Math.min(max, n)); }
+
+  function branchRelation(bA,bB){
+    for(const g of sanhap){ if(g.includes(bA) && g.includes(bB)) return 'sanhap'; }
+    if(yukhap[bA] === bB) return 'yukhap';
+    if(chung[bA] === bB) return 'chung';
+    return 'normal';
+  }
+
+  const relTextMap = {
+    a_gen_b: (a,b)=>`${a}의 기운이 ${b}에게 끊임없이 힘을 실어주는 상생(相生) 관계로, 한쪽이 베풀고 한쪽이 받는 구조가 자연스럽게 형성됩니다.`,
+    b_gen_a: (a,b)=>`${b}의 기운이 ${a}을 북돋아주는 상생(相生) 관계로, 서로의 부족한 부분을 무의식적으로 채워주는 흐름이 관찰됩니다.`,
+    same: (a,b)=>`두 사람의 일간이 같은 오행(비화·比和)에 속해, 가치관과 생활 리듬이 유사합니다. 편안하지만 때로 같은 지점에서 함께 정체될 수 있습니다.`,
+    a_ctrl_b: (a,b)=>`${a}이 ${b}을 억제하는 상극(相剋) 구조로, 초반에는 주도권을 둘러싼 긴장이 있으나 이 긴장이 관계를 단단하게 만드는 축으로 작용할 수 있습니다.`,
+    b_ctrl_a: (a,b)=>`${b}이 ${a}을 억제하는 상극(相剋) 구조로, 방향을 잡아주는 쪽과 자극을 받는 쪽의 역할 분담이 뚜렷하게 나타납니다.`
+  };
+
+  function relationType(wA,wB){
+    if(wA===wB) return 'same';
+    if(generates[wA]===wB) return 'a_gen_b';
+    if(generates[wB]===wA) return 'b_gen_a';
+    if(controls[wA]===wB) return 'a_ctrl_b';
+    if(controls[wB]===wA) return 'b_ctrl_a';
+    return 'same';
+  }
+
+  const baseScoreMap = { a_gen_b:86, b_gen_a:83, same:71, a_ctrl_b:57, b_ctrl_a:59 };
+
+  const branchBonusMap = { sanhap: 10, yukhap: 6, chung: -8, normal: 0 };
+  const branchTextMap = {
+    sanhap: '두 사람의 띠는 삼합(三合)을 이루어, 서로 다른 개성이 모여 하나의 목표로 응집되는 강한 결속력을 보입니다.',
+    yukhap: '두 사람의 띠는 육합(六合)을 이루어, 일상적인 합이 잘 맞고 마찰이 생겨도 빠르게 회복되는 경향이 있습니다.',
+    chung: '두 사람의 띠는 충(沖) 관계로, 서로 자극을 주고받으며 관계가 정적이지 않고 역동적으로 흘러갑니다.',
+    normal: '두 사람의 띠는 특별한 합충 관계 없이 무난하게 병존하며, 관계의 색깔은 온전히 두 사람이 채워가는 쪽에 가깝습니다.'
+  };
+
+  function scoreTag(score){
+    if(score>=88) return '천생연분급 궁합';
+    if(score>=78) return '매우 좋은 궁합';
+    if(score>=65) return '무난하고 안정적인 궁합';
+    if(score>=50) return '노력이 필요한 궁합';
+    return '서로를 알아가야 할 궁합';
+  }
+
+  function metricLabel(key){
+    return {love:'애정운',comm:'소통운',wealth:'재물운',stability:'지속력'}[key];
+  }
+
+  function run(){
+    const nameA = document.getElementById('nameA').value.trim() || 'A';
+    const nameB = document.getElementById('nameB').value.trim() || 'B';
+    const dA = document.getElementById('dateA').value;
+    const dB = document.getElementById('dateB').value;
+    const err = document.getElementById('errorMsg');
+
+    if(!dA || !dB){
+      err.textContent = '두 사람의 생년월일을 모두 입력해주세요.';
+      return;
+    }
+    err.textContent = '';
+
+    document.querySelector('.view-form').style.display = 'none';
+    const loadingView = document.getElementById('loadingView');
+    loadingView.classList.add('active');
+
+    const subMsgs = ['천간(天干) 대조 중...','지지(地支) 합충 분석 중...','오행 상성 계산 중...','리포트 생성 중...'];
+    let mi = 0;
+    const subEl = document.getElementById('loadingSub');
+    const interval = setInterval(()=>{ subEl.textContent = subMsgs[mi % subMsgs.length]; mi++; }, 480);
+
+    const calA = document.querySelector('input[name="calA"]:checked').value;
+    const calB = document.querySelector('input[name="calB"]:checked').value;
+    const leapA = document.getElementById('leapA').checked;
+    const leapB = document.getElementById('leapB').checked;
+
+    setTimeout(()=>{
+      clearInterval(interval);
+      loadingView.classList.remove('active');
+      showResult(nameA, nameB, dA, dB, calA, calB, leapA, leapB);
+    }, 1900);
+  }
+
+  function showResult(nameA, nameB, dA, dB, calA, calB, leapA, leapB){
+    const [yA0,mA0,ddA0] = dA.split('-').map(Number);
+    const [yB0,mB0,ddB0] = dB.split('-').map(Number);
+
+    const solarA = resolveDate(yA0,mA0,ddA0,calA,leapA);
+    const solarB = resolveDate(yB0,mB0,ddB0,calB,leapB);
+    const {y:yA,m:mA,d:ddA} = solarA;
+    const {y:yB,m:mB,d:ddB} = solarB;
+
+    const pA = dayPillar(yA,mA,ddA);
+    const pB = dayPillar(yB,mB,ddB);
+    const brA = yearBranch(yA);
+    const brB = yearBranch(yB);
+
+    const relType = relationType(pA.wx, pB.wx);
+    const brRel = branchRelation(brA, brB);
+
+    const seed = hashStr(dA+dB+nameA+nameB);
+    let score = baseScoreMap[relType] + branchBonusMap[brRel];
+    score += (seed % 9) - 4;
+    score = clamp(Math.round(score), 34, 98);
+
+    document.getElementById('reportNo').textContent = 'REPORT NO. ' + (10000 + (seed % 89999));
+    document.getElementById('reportDate').textContent = new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'2-digit',day:'2-digit'}).replace(/\./g,'.').replace(/\s/g,'');
+    document.getElementById('nameADisp').textContent = nameA;
+    document.getElementById('nameBDisp').textContent = nameB;
+    document.getElementById('pillarWhoA').textContent = nameA + '의 일주';
+    document.getElementById('pillarWhoB').textContent = nameB + '의 일주';
+    document.getElementById('ganjiA').textContent = pA.stem + pA.branch;
+    document.getElementById('ganjiB').textContent = pB.stem + pB.branch;
+    document.getElementById('wxA').textContent = '오행: ' + pA.wx;
+    document.getElementById('wxB').textContent = '오행: ' + pB.wx;
+
+    document.getElementById('scoreNum').textContent = score;
+    document.getElementById('gaugeTag').textContent = scoreTag(score);
+    document.getElementById('gauge').style.setProperty('--pct', 0);
+    requestAnimationFrame(()=>{
+      document.getElementById('gauge').style.transition = 'background 1.1s ease';
+      document.getElementById('gauge').style.setProperty('--pct', score);
+    });
+
+    const metrics = {
+      love: clamp(score + ((seed>>2)%13-6), 20, 99),
+      comm: clamp(score + ((seed>>4)%13-6), 20, 99),
+      wealth: clamp(score + ((seed>>6)%13-6), 20, 99),
+      stability: clamp(score + ((seed>>8)%13-6), 20, 99)
+    };
+    const metricsEl = document.getElementById('metrics');
+    metricsEl.innerHTML = '';
+    Object.keys(metrics).forEach(k=>{
+      const wrap = document.createElement('div');
+      wrap.className = 'metric';
+      wrap.innerHTML = `<div class="metric-top"><span class="m-name">${metricLabel(k)}</span><span class="m-val">${metrics[k]}</span></div>
+        <div class="metric-bar"><div style="width:0"></div></div>`;
+      metricsEl.appendChild(wrap);
+      requestAnimationFrame(()=>{ wrap.querySelector('.metric-bar > div').style.width = metrics[k] + '%'; });
+    });
+
+    const relSentence = relTextMap[relType](pA.wx, pB.wx);
+    const branchSentence = branchTextMap[brRel];
+    const wxSentence = `${nameA}은(는) ${wxColorHint[pA.wx]}을, ${nameB}은(는) ${wxColorHint[pB.wx]}을 타고났습니다.`;
+    document.getElementById('analysisText').textContent = `${wxSentence} ${relSentence} ${branchSentence} 종합적으로 이 조합은 ${score}점, "${scoreTag(score)}"으로 분석됩니다.`;
+
+    document.getElementById('resultView').classList.add('active');
+  }
+
+  function wireCalToggle(toggleId, leapWrapId, noteId){
+    const toggle = document.getElementById(toggleId);
+    toggle.querySelectorAll('label').forEach(lbl=>{
+      lbl.addEventListener('click', ()=>{
+        toggle.querySelectorAll('label').forEach(l=>l.classList.remove('active'));
+        lbl.classList.add('active');
+        const isLunar = lbl.dataset.val === 'lunar';
+        document.getElementById(leapWrapId).style.display = isLunar ? 'flex' : 'none';
+        document.getElementById(noteId).classList.toggle('show', isLunar);
+      });
+    });
+  }
+  wireCalToggle('calToggleA','leapWrapA','lunarNoteA');
+  wireCalToggle('calToggleB','leapWrapB','lunarNoteB');
+
+  document.getElementById('submitBtn').addEventListener('click', run);
+  document.getElementById('retryBtn').addEventListener('click', ()=>{
+    document.getElementById('resultView').classList.remove('active');
+    document.querySelector('.view-form').style.display = 'block';
+    document.getElementById('resultView').querySelectorAll('.ring').forEach(r=>{ r.style.animation='none'; void r.offsetWidth; r.style.animation=null; });
+  });
+})();
+</script>
+</body>
+</html>
